@@ -6,11 +6,11 @@
  * Time: 13:44
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-if ( ! class_exists( 'WC_PickList_API' ) ) :
+if (!class_exists('WC_PickList_API')) :
 
     class WC_PickList_API extends WC_Integration
     {
@@ -171,7 +171,7 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
 
             array_multisort($types, SORT_ASC, $timestamps, SORT_ASC, $orders);
 
-            wp_send_json(array('success' => true, 'orders' => $orders, 'count' => (string)count($orders), 'total' => (string)$wp_query->found_posts));
+            wp_send_json(array('success' => true, 'orders' => $orders, 'count' => count($orders), 'total' => $wp_query->found_posts));
 
             die();
 
@@ -192,22 +192,23 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
             $order = array();
 
             $order['status'] = $WC_Order->post_status;
-            $order['id'] = (string)$order_id;
+            $order['id'] = $order_id;
             $order['title'] = $this->getFormattedTitleForOrderID($order_id);
             $order['admin_link'] = admin_url('post.php?post=' . $order_id . '&action=edit');
             $order['date'] = date('d.m - H:i', strtotime($WC_Order->order_date));
-            $order['timestamp'] = (string)strtotime($WC_Order->order_date);
+            $order['timestamp'] = strtotime($WC_Order->order_date);
+
+            $order['amount'] = $this->getAmountOpenForOrderID($order_id) . ' ' . $WC_Order->order_currency;
+            $order['qty_open'] = $this->getQtyOpenForOrderID($order_id);
+            $order['qty_shipped'] = $this->getQtyShippedForOrderID($order_id);
+
             $order['items'] = $this->getItemsForOrder($WC_Order);
 
-            $order['amount'] = (string)$this->getAmountOpenForOrderID($order_id) . ' ' . $WC_Order->order_currency;
-            $order['qty_open'] = (string)$this->getQtyOpenForOrderID($order_id);
-            $order['qty_shipped'] = (string)$this->getQtyShippedForOrderID($order_id);
-
             $order['shipping_name'] = $WC_Order->shipping_first_name . ' ' . $WC_Order->shipping_last_name;
-            $order['formatted_shipping_address'] = str_ireplace(array("<br />", "<br>", "<br/>"), " ", $WC_Order->get_formatted_shipping_address());
+            $order['formatted_shipping_address'] = str_ireplace(array("<br />", "<br>", "<br/>"), "\n", $WC_Order->get_formatted_shipping_address());
             $order['formatted_shipping_address_url'] = $WC_Order->get_shipping_address_map_url();
 
-            $order['billing_phone'] = (string)$WC_Order->billing_phone;
+            $order['billing_phone'] = $WC_Order->billing_phone;
             $order['billing_email'] = $WC_Order->billing_email;
 
 
@@ -246,21 +247,7 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
             foreach ($WC_Order->get_items() as $itemID => $lineItem) {
 
                 $item = array();
-                $item["order_item_id"] = (string)$itemID;
-                $item['name'] = $lineItem['name'];
-                $item['qty_ordered'] = (string)abs($lineItem['qty']);
-                $item['price'] = (string)abs($lineItem['line_total']/max( 1, $lineItem['qty']));
-                $item['qty_refunded'] = (string)abs($WC_Order->get_qty_refunded_for_item($itemID));
 
-                $item['qty_shipped'] = (string)array_sum(wc_get_order_item_meta($itemID, '_picklist_shipped', false));
-                $item['qty_notpicked'] = (string)array_sum(wc_get_order_item_meta($itemID, '_picklist_notpicked', false));
-                $item['qty_open'] = (string)($item['qty_ordered'] - $item['qty_refunded'] - $item['qty_shipped']);
-
-                if ($item['qty_open'] <= 0) {
-                    $item['qty_notpicked'] = "0";
-                }
-
-                $item['qty_picked'] = "0";
 
                 if ($lineItem['variation_id'] > 0) {
                     $item['id'] = $lineItem['variation_id'];
@@ -273,7 +260,7 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
                 }
 
                 if ($item['sku'] == "" && $lineItem['variation_id'] > 0) {
-                    if ($WC_Product = new WC_Product($lineItem['variation_id'])) {
+                    if ($WC_Product = new WC_Product_Variation($lineItem['variation_id'])) {
                         $item['sku'] = $WC_Product->get_sku();
                     }
                 }
@@ -282,11 +269,25 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
                     $item['sku'] = $item['id'];
                 }
 
+                $item["order_item_id"] = $itemID;
+
+                $item['name'] = $lineItem['name'];
+
                 $item['formatted_attributes'] = $this->extractVariableProductAttributes($lineItem);
 
                 if ($item['formatted_attributes'] == "") {
                     $item['formatted_attributes'] = $this->extractProductCategories($item['id']);
                 }
+
+                $item['price'] = round(abs($lineItem['line_total'] / max(1, $lineItem['qty'])), 2);
+
+
+                $item['qty_ordered'] = abs($lineItem['qty']);
+                $item['qty_refunded'] = abs($WC_Order->get_qty_refunded_for_item($itemID));
+                $item['qty_shipped'] = array_sum(wc_get_order_item_meta($itemID, '_picklist_shipped', false));
+                $item['qty_open'] = ($item['qty_ordered'] - $item['qty_refunded'] - $item['qty_shipped']);
+
+                $item['qty_picked'] = 0;
 
                 if ($indexed) {
                     $items[$itemID] = $item;
@@ -395,7 +396,6 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
         }
 
 
-
         private function getQtyShippedForOrderID($order_id)
         {
 
@@ -415,8 +415,6 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
 
             return $qty;
         }
-
-
 
 
         public function getOpenOrderByIDAPI($data)
@@ -452,7 +450,6 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
             die();
 
         }
-
 
 
         private function filterOpenItemsFromOrder($items)
@@ -540,9 +537,6 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
                         wc_add_order_item_meta($processed_item["order_item_id"], '_picklist_shipped', $qty_picked, false);
                         $picklist_shipped_items[] = $processed_item;
                         continue;
-                    } else if ($qty_open > 0 && $qty_picked == 0) {
-                        wc_add_order_item_meta($processed_item["order_item_id"], '_picklist_notpicked', $qty_open, false);
-                        continue;
                     }
 
                 }
@@ -568,9 +562,9 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
             $picklist_setting = get_option('woocommerce_picklist_settings');
 
             if (isset($picklist_setting["autocomplete_order"])) {
-                if($picklist_setting["autocomplete_order"]=="yes"){
+                if ($picklist_setting["autocomplete_order"] == "yes") {
                     $autocomplete_order = true;
-                }else{
+                } else {
                     $autocomplete_order = false;
                 }
 
@@ -581,22 +575,19 @@ if ( ! class_exists( 'WC_PickList_API' ) ) :
             $qty_open = $this->getQtyOpenForOrderID($order_id);
 
 
-
             if ($WC_Order->post_status == "wc-processing" && $autocomplete_order && $qty_open == 0) {
                 $WC_Order->update_status('completed', 'PickList: ');
             }
 
             if ($qty_open == 0) {
                 $isComplete = true;
-            }else{
+            } else {
                 $isComplete = false;
             }
 
-            wp_send_json(array('success' => true, 'orderState' => array('isComplete' => (string)$isComplete, 'itemsLeft' => (string)$qty_open)));
+            wp_send_json(array('success' => true, 'orderState' => array('isComplete' => (string)$isComplete, 'itemsLeft' => $qty_open)));
 
         }
-
-
 
 
     }

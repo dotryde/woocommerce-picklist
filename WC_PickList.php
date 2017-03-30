@@ -39,6 +39,13 @@ if ( ! class_exists( 'WC_PickList' ) ) :
             add_action( 'plugins_loaded', array( $this, 'init' ) );
             add_action( 'admin_enqueue_scripts', array($this,'add_admin_style'));
 
+            add_filter( 'woocommerce_hidden_order_itemmeta', array($this,'remove_order_item_meta_fields'));
+
+            add_filter( 'manage_shop_order_posts_columns', array($this,'add_woocomerce_picklist_column'), 11 );
+            add_filter( 'manage_shop_order_posts_custom_column', array($this,'add_woocomerce_picklist_column_row'), 10, 3 );
+
+            add_action( 'woocommerce_after_order_itemmeta', array($this,'action_woocommerce_order_item_type_html'), 10, 3 );
+
         }
 
         public function init() {
@@ -61,9 +68,96 @@ if ( ! class_exists( 'WC_PickList' ) ) :
             wp_enqueue_style('admin-styles', plugin_dir_url( __FILE__ ).'css/admin.css');
         }
 
+        public function remove_order_item_meta_fields( $fields ) {
+            $fields[] = '_picklist_shipped';
+
+            return $fields;
+        }
+
+        public function add_woocomerce_picklist_column( $column ) {
+            $column["picklist"] = "Fulfillment";
+            return $column;
+        }
+
+        public function add_woocomerce_picklist_column_row( $column_name, $id  ) {
+
+            switch ($column_name) {
+                case 'picklist' :
+                    echo $this->getPickListItemsFormatted($id);
+                    break;
+                default:
+            }
+            return $column_name;
+        }
+
+        private function getPickListItemsFormatted($order_id){
+
+            $WC_PickList_API = new WC_PickList_API();
+
+            $order = $WC_PickList_API->getOrder($order_id);
+
+            $qty_open = $order["qty_open"];
+            $qty_shipped = $order["qty_shipped"];
+
+            $qty_total = $qty_open + $qty_shipped;
+            $percent = 100 / $qty_total * $qty_shipped;
+
+            $status = "normal";
+            if($qty_open == 0){
+                $status = "done";
+            }else if($qty_shipped == 0){
+                $status = "open";
+            }else if($qty_shipped > 0){
+                $status = "waiting";
+            }
+
+            echo '<div class="'.$status.'">';
+
+            if( $status ==  "done"){
+                echo "shipped";
+            }else if( $status ==  "open"){
+                echo "unfulfilled";
+            }else{
+                echo "$qty_shipped / $qty_total";
+            }
+
+            echo '</div>';
+
+        }
+
+        public function action_woocommerce_order_item_type_html( $item_id, $item, $product )
+        {
+
+            $WC_Order = new WC_Order(get_the_ID());
+
+            $qty_ordered = abs($item['qty']);
+            $qty_refunded = abs($WC_Order->get_qty_refunded_for_item($item_id));
+            $qty_shipped = array_sum(wc_get_order_item_meta($item_id, '_picklist_shipped', false));
+
+            $qty_open = $qty_ordered - $qty_refunded - $qty_shipped;
+
+            if($qty_open>0){
+                echo '<span class="picklist picklist_open">Unfullfilled: ';
+                echo $qty_open;
+                echo "</span><br>";
+            }
+
+            if($qty_shipped>0){
+                echo '<span class="picklist picklist_shipped">Shipped: ';
+                echo $qty_shipped;
+                echo "</span><br>";
+            }
 
 
-    }
+
+
+        }
+
+
+
+
+
+        }
 
     $WC_PickList = new WC_PickList( __FILE__ );
 

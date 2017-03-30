@@ -1,0 +1,33 @@
+#woocommerce-order-items .woocommerce_order_items_wrapper table.woocommerce_order_items span.picklist_open {
+    color: #ea8d11;
+    font-weight: bold;
+}
+
+#woocommerce-order-items .woocommerce_order_items_wrapper table.woocommerce_order_items span.picklist_shipped {
+    color: #2dad62;
+    font-weight: bold;
+}
+
+td.picklist.column-picklist div{
+    text-align: center;
+    min-height: 24px;
+    line-height: 24px;
+    margin: 2px 0;
+    max-width: 200px;
+}
+
+td.picklist.column-picklist .open{
+    background: #555;
+    color: white;
+}
+
+td.picklist.column-picklist .done {
+    background: #2dad62;
+    color: white;
+}
+
+
+td.picklist.column-picklist .waiting {
+    background: #ea8d11;
+    color: white;
+}
