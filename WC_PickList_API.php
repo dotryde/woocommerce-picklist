@@ -30,7 +30,6 @@ if (!class_exists('WC_PickList_API')) :
                     'methods' => 'GET',
                     'callback' => array($this, 'getOpenOrdersAPI'),
                     'permission_callback' => function () {
-                        return true;
                         return $this->isAuthenticatedCheck();
 
                     },
@@ -49,7 +48,6 @@ if (!class_exists('WC_PickList_API')) :
                         ),
                     ),
                     'permission_callback' => function () {
-                        return true;
                         return $this->isAuthenticatedCheck();
                     },
                 ));
@@ -268,6 +266,8 @@ if (!class_exists('WC_PickList_API')) :
                 if ($item['sku'] == "") {
                     $item['sku'] = $item['id'];
                 }
+
+                $item['sku'] = (string)$item['sku'];
 
                 $item["order_item_id"] = $itemID;
 
