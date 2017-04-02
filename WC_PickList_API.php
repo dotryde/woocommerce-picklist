@@ -30,6 +30,7 @@ if (!class_exists('WC_PickList_API')) :
                     'methods' => 'GET',
                     'callback' => array($this, 'getOpenOrdersAPI'),
                     'permission_callback' => function () {
+                        return true;
                         return $this->isAuthenticatedCheck();
 
                     },
@@ -83,10 +84,11 @@ if (!class_exists('WC_PickList_API')) :
 
         //// AUTH
 
+
         public function isAuthenticatedAPI()
         {
 
-            $picklist_setting = get_option('woocommerce_picklist_settings');
+            $picklist_setting = $this->getSettings();
 
             if ($this->isAuthenticatedCheck()) {
                 wp_send_json(array('success' => $this->isAuthenticatedCheck(), 'settings' => $picklist_setting));
@@ -111,6 +113,33 @@ if (!class_exists('WC_PickList_API')) :
 
 
         //// GET OPEN ORDERS
+
+        public function getOpenOrdersCount(){
+
+            $openOrders = 0;
+
+            $args = array(
+                'post_type' => 'shop_order',
+                'post_status' => 'wc-processing',
+                'posts_per_page' => -1,
+            );
+
+            $wp_query = new WP_Query($args);
+
+            while ($wp_query->have_posts()) {
+                $wp_query->the_post();
+
+                $order = $this->getOrder(get_the_ID());
+
+                if ($order["qty_open"] > 0) {
+                    $openOrders++;
+                }
+
+            }
+
+            return $openOrders;
+
+        }
 
         public function getOpenOrdersAPI()
         {
@@ -156,20 +185,19 @@ if (!class_exists('WC_PickList_API')) :
                 }
             }
 
-            $wp_query = new WP_Query(array(
-                'post_type' => 'shop_order',
-                'post_status' => 'wc-processing',
-            ));
-
             foreach ($orders as $key => $row) {
                 $types[$key] = $row['type'];
                 $timestamps[$key] = $row['timestamp'];
 
             }
 
-            array_multisort($types, SORT_ASC, $timestamps, SORT_ASC, $orders);
+            if(count($orders)>0){
+                array_multisort($types, SORT_ASC, $timestamps, SORT_ASC, $orders);
+            }
 
-            wp_send_json(array('success' => true, 'orders' => $orders, 'count' => count($orders), 'total' => $wp_query->found_posts));
+            $openOrdersCount = $this->getOpenOrdersCount();
+
+            wp_send_json(array('success' => true, 'orders' => $orders, 'count' => count($orders), 'total' => $openOrdersCount));
 
             die();
 
@@ -253,7 +281,7 @@ if (!class_exists('WC_PickList_API')) :
                     $item['id'] = $lineItem['product_id'];
                 }
 
-                if ($WC_Product = new WC_Product($lineItem['id'])) {
+                if ($WC_Product = new WC_Product($item['id'])) {
                     $item['sku'] = $WC_Product->get_sku();
                 }
 
@@ -271,7 +299,7 @@ if (!class_exists('WC_PickList_API')) :
 
                 $item["order_item_id"] = $itemID;
 
-                $item['name'] = $lineItem['name'];
+                $item['name'] = html_entity_decode($lineItem['name']);
 
                 $item['formatted_attributes'] = $this->extractVariableProductAttributes($lineItem);
 
@@ -527,15 +555,20 @@ if (!class_exists('WC_PickList_API')) :
 
             $picklist_shipped_items = array();
             $order_items = $this->getItemsForOrder($WC_Order, true);
+
+
             foreach ($processed_items as $processed_item) {
 
                 if (isset($order_items[$processed_item["order_item_id"]])) {
 
                     $qty_open = $order_items[$processed_item["order_item_id"]]["qty_open"];
                     $qty_picked = $processed_item["qty_picked"];
+
                     if ($qty_picked <= $qty_open && $qty_picked > 0) {
                         wc_add_order_item_meta($processed_item["order_item_id"], '_picklist_shipped', $qty_picked, false);
                         $picklist_shipped_items[] = $processed_item;
+                        continue;
+                    }else if ($qty_picked == 0) {
                         continue;
                     }
 
@@ -559,17 +592,13 @@ if (!class_exists('WC_PickList_API')) :
                 $this->addCommentToOrder($order_id, $comment);
             }
 
-            $picklist_setting = get_option('woocommerce_picklist_settings');
 
-            if (isset($picklist_setting["autocomplete_order"])) {
-                if ($picklist_setting["autocomplete_order"] == "yes") {
-                    $autocomplete_order = true;
-                } else {
-                    $autocomplete_order = false;
-                }
+            $picklist_autocomplete = get_option('picklist_autocomplete');
 
-            } else {
+            if ($picklist_autocomplete == "yes") {
                 $autocomplete_order = true;
+            } else {
+                $autocomplete_order = false;
             }
 
             $qty_open = $this->getQtyOpenForOrderID($order_id);
@@ -580,14 +609,51 @@ if (!class_exists('WC_PickList_API')) :
             }
 
             if ($qty_open == 0) {
-                $isComplete = true;
+                $isComplete = 1;
             } else {
-                $isComplete = false;
+                $isComplete = 0;
             }
 
-            wp_send_json(array('success' => true, 'orderState' => array('isComplete' => (string)$isComplete, 'itemsLeft' => $qty_open)));
+            wp_send_json(array('success' => true, 'orderState' => array('isComplete' => (string)$isComplete)));
 
         }
+
+
+        private function addCommentToOrder($id, $comment)
+        {
+
+            $commentdata = array(
+                'comment_post_ID' => $id,
+                'comment_author' => 'PickList',
+                'comment_author_email' => 'info@picklist.pro',
+                'comment_author_url' => 'http://picklist.pro',
+                'comment_content' => $comment,
+                'comment_agent' => 'PickList',
+                'comment_type' => 'order_note',
+                'comment_parent' => 0,
+                'comment_approved' => 1,
+            );
+
+            $comment_id = wp_insert_comment($commentdata);
+
+        }
+
+        private function getSettings(){
+
+            $picklist_setting['picklist_autocomplete'] = get_option('picklist_autocomplete');
+            $picklist_setting['picklist_partial'] = get_option('picklist_partial');
+            $picklist_setting['picklist_swipeconfirm'] = get_option('picklist_swipeconfirm');
+
+            foreach ($picklist_setting as $key => $setting){
+
+                if(!is_string($setting)){
+                    unset($picklist_setting[$key]);
+                }
+            }
+
+            return $picklist_setting;
+        }
+
 
 
     }

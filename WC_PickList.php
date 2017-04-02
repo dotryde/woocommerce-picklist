@@ -50,17 +50,11 @@ if ( ! class_exists( 'WC_PickList' ) ) :
 
         public function init() {
             if  (class_exists('WC_Integration')){
-                include_once 'WC_PickList_Integration.php';
-                add_filter( 'woocommerce_integrations', array( $this, 'add_integration' ) );
+                include_once 'WC_PickList_Settings.php';
+                $WC_PickList_Settings = new WC_PickList_Settings();
                 include_once 'WC_PickList_API.php';
                 $WC_PickList_API = new WC_PickList_API();
             }
-
-        }
-
-        public function add_integration( $integrations ){
-            $integrations[] = 'WC_PickList_Integration';
-            return $integrations;
 
         }
 
@@ -153,6 +147,12 @@ if ( ! class_exists( 'WC_PickList' ) ) :
 
         }
 
+        public function install(){
+           add_option( 'picklist_autocomplete', "yes");
+           add_option( 'picklist_partial', "no");
+           add_option( 'picklist_swipeconfirm', "no");
+        }
+
 
 
 
@@ -160,6 +160,8 @@ if ( ! class_exists( 'WC_PickList' ) ) :
         }
 
     $WC_PickList = new WC_PickList( __FILE__ );
+
+    register_activation_hook( __FILE__, array( 'WC_PickList', 'install' ) );
 
 
 endif;
