@@ -30,7 +30,6 @@ if (!class_exists('WC_PickList_API')) :
                     'methods' => 'GET',
                     'callback' => array($this, 'getOpenOrdersAPI'),
                     'permission_callback' => function () {
-                        return true;
                         return $this->isAuthenticatedCheck();
 
                     },
@@ -281,8 +280,10 @@ if (!class_exists('WC_PickList_API')) :
                     $item['id'] = $lineItem['product_id'];
                 }
 
-                if ($WC_Product = new WC_Product($item['id'])) {
-                    $item['sku'] = $WC_Product->get_sku();
+                if ($item['sku'] == "" && !($lineItem['variation_id'] > 0)) {
+                    if ($WC_Product = new WC_Product($lineItem['product_id'])) {
+                        $item['sku'] = $WC_Product->get_sku();
+                    }
                 }
 
                 if ($item['sku'] == "" && $lineItem['variation_id'] > 0) {
