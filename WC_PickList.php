@@ -10,7 +10,7 @@ Plugin URI:  https://www.picklist.pro
 Description: PickList for WooCommerce - Order Processing on Steroids
 Version:     1.1
 Author:      dotry UG (haftungsbeschränkt)
-Author URI:  https://www.picklist.pro
+Author URI:  https://www.dotry.de
 Text Domain: picklist
 Domain Path: /languages
 License:     GPL2
