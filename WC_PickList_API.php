@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: danielgoebel
- * Date: 28.03.17
- * Time: 13:44
- */
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
@@ -185,13 +179,15 @@ if (!class_exists('WC_PickList_API')) :
             }
 
             foreach ($orders as $key => $row) {
-                $types[$key] = $row['type'];
+                //$types[$key] = $row['type'];
                 $timestamps[$key] = $row['timestamp'];
 
             }
 
             if(count($orders)>0){
-                array_multisort($types, SORT_ASC, $timestamps, SORT_ASC, $orders);
+                //array_multisort($types, SORT_ASC, $timestamps, SORT_ASC, $orders);
+                array_multisort($timestamps, SORT_ASC, $orders);
+
             }
 
             $openOrdersCount = $this->getOpenOrdersCount();
@@ -209,7 +205,12 @@ if (!class_exists('WC_PickList_API')) :
         public function getOrder($order_id)
         {
 
-            $WC_Order = new WC_Order($order_id);
+            try {
+                $WC_Order = new WC_Order($order_id);
+            } catch (Exception $e) {
+                return false;
+            }
+
             if (!isset($WC_Order->post)) {
                 return false;
             }
@@ -224,12 +225,14 @@ if (!class_exists('WC_PickList_API')) :
             $order['timestamp'] = strtotime($WC_Order->order_date);
 
             $order['amount'] = $this->getAmountOpenForOrderID($order_id) . ' ' . $WC_Order->order_currency;
+            $order['qty_ordered_actual'] = $this->getQtyOrderedActualForOrderID($order_id);
             $order['qty_open'] = $this->getQtyOpenForOrderID($order_id);
             $order['qty_shipped'] = $this->getQtyShippedForOrderID($order_id);
 
             $order['items'] = $this->getItemsForOrder($WC_Order);
 
             $order['shipping_name'] = $WC_Order->shipping_first_name . ' ' . $WC_Order->shipping_last_name;
+            $order['shipping_city'] = $WC_Order->shipping_city;
             $order['formatted_shipping_address'] = str_ireplace(array("<br />", "<br>", "<br/>"), "\n", $WC_Order->get_formatted_shipping_address());
             $order['formatted_shipping_address_url'] = $WC_Order->get_shipping_address_map_url();
 
@@ -440,6 +443,27 @@ if (!class_exists('WC_PickList_API')) :
 
             foreach ($items as $item) {
                 $qty = $qty + $item["qty_shipped"];
+            }
+
+            return $qty;
+        }
+
+        private function getQtyOrderedActualForOrderID($order_id)
+        {
+
+            $WC_Order = new WC_Order($order_id);
+            if (!isset($WC_Order->post)) {
+                return 0;
+            }
+
+            $items = $this->getItemsForOrder($WC_Order);
+
+
+            $qty = 0;
+
+            foreach ($items as $item) {
+                $singleQty =  $item["qty_ordered"] -  $item["qty_refunded"];
+                $qty = $qty + $singleQty;
             }
 
             return $qty;

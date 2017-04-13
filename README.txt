@@ -54,14 +54,15 @@ This section describes how to install the plugin and get it working.
 
 = What about my customer data? =
 
-Don't worry. The data transfer itself just takes place between the WooCommerce / WordPress API and your iOS device. No cloud. No third party servers. 
+Don't worry. The data transfer itself just takes place between the WooCommerce / WordPress API and your iOS device. No cloud. No Software as a Service. No third party servers.
 
 = My shop is no using HTTPS! =
 
 Sorry bro, but we strongly enforce HTTPS. So go and get a free Let's Encrypt SSL/TLS certificates and you can use PickList for WooCommerce.
 
 == Screenshots ==
-1. Plugin in action at post editor section.
+1. Orders with added fulfillment status
+2. PickList settings
 
 == Changelog ==
 = 1.1 =

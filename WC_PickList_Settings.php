@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: danielgoebel
- * Date: 28.03.17
- * Time: 13:44
- */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly
@@ -48,16 +42,14 @@ if ( ! class_exists( 'WC_PickList_Settings' ) ) :
                 'section_title' => array(
                     'name'     => __( 'PickList', 'woocommerce-picklist_settings' ),
                     'type'     => 'title',
-                    'desc'     => 'Settings for PickList for WooCommerce. For more information see <a href="https://www.picklist.pro" target="_blank">https://www.picklist.pro</a>
-',
+                    'desc'     => 'Settings for PickList for WooCommerce. For more information see <a href="https://www.picklist.pro" target="_blank">https://www.picklist.pro</a>',
                     'id'       => 'wc_settings_picklist_settings_section_title'
                 ),
                 "picklist_partial" => array(
                     'id'                => 'picklist_partial',
                     'title'             => __( 'Enable partial shipping', 'wc-picklist' ),
                     'type'              => 'checkbox',
-                    'desc'       => __( 'Enables you to send multiple shipments for one order. Helpful if you got multiple warehouses.', 'wc-picklist' ),
-
+                    'desc'       => __( 'Ship an order with missing items.', 'wc-picklist' ),
                 ),
                 "picklist_autocomplete" => array(
                     'id'                => 'picklist_autocomplete',
@@ -69,7 +61,7 @@ if ( ! class_exists( 'WC_PickList_Settings' ) ) :
                     'id'                => 'picklist_swipeconfirm',
                     'title'             => __( "Allow swipe confirmation", 'wc-picklist' ),
                     'type'              => 'checkbox',
-                    'desc'       => __( 'Allow confirmation of the correct item by swiping instead of scanning the item\'s barcode. This could lead to an increase in picking and packing errors!', 'wc-picklist' ),
+                    'desc'       => __( 'Allow confirmation of an item by swiping instead of scanning the item\'s barcode. ', 'wc-picklist' ),
                 ),
                 'section_end' => array(
                     'type' => 'sectionend',
