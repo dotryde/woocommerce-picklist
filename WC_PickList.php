@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /*
 Plugin Name: PickList for WooCommerce
 Plugin URI:  https://www.picklist.pro
-Description: PickList for WooCommerce - Order Processing on Steroids
+Description: PickList for WooCommerce - The #1 Order Processing App for WooCommerce
 Version:     1.1
 Author:      dotry UG (haftungsbeschränkt)
 Author URI:  https://www.dotry.de

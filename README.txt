@@ -1,20 +1,20 @@
-=== PickList for WooCommerce - Order Processing on Steroids ===
+=== PickList for WooCommerce - The #1 Order Processing App for WooCommerce ===
 Contributors: dotry
 Donate link: https://picklist.pro
-Tags: woocommerce, picklist, pick, picking, pick list, autocomplete, complete, shipping, fulfillment, autocomplete, ios
+Tags: woocommerce, picklist, pick, picking, pick list, woocommerce pick list, autocomplete, complete, shipping, fulfillment, autocomplete, ios
 Requires at least: 4.6
 Tested up to: 4.7.3
 Stable tag: 1.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-PickList for WooCommerce - Order Processing on Steroids
+PickList for WooCommerce - The #1 Order Processing App for WooCommerce
 
 == Description ==
 
 **Ship your WooCommerce Orders directly from your iPhone, iPod touch or iPad.**
 
-*"The #1 Order Fulfillment App for WooCommerce. 100% Barcode powered."*
+*"The #1 Order Processing App for WooCommerce. 100% Barcode powered."*
 
 Features:
 
